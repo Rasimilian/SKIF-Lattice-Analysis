@@ -1,0 +1,31 @@
+call, file="D:\PycharmProjects\SKIF-Lattice-Analysis\Ring_DD_nosext.seq";
+beam, sequence=ring, particle=electron, energy=3, radiate=False;
+use, sequence=ring;
+
+READTABLE, file=D:\PycharmProjects\SKIF-Lattice-Analysis\imperfections_all_aligns.txt, table=errtab; 
+SETERR, TABLE=errtab;
+
+ptc_create_universe;
+ptc_create_layout, time=True, model=2,method=6,nst=3;
+ptc_align;
+
+x=-0.1;
+step = 0.2/100;
+
+while(x<0.1){
+y=0;
+value, y;
+while(y<0.1){
+ptc_start, x=x, y=y, px=0, py=0, t=0, pt=0;
+y=y+step;
+value, y;
+};
+x=x+step;
+value, x;};
+
+ptc_track, icase=6, turns=1000, closed_orbit = False, radiation=False, maxaper={1,1,1,1,1,1}, element_by_element = False, onetable=True, file="D:\PycharmProjects\SKIF-Lattice-Analysis\tracking_nosext_xy_100",EXTENSION=".txt";
+ptc_track_end;
+ptc_end;
+
+stop;
+
