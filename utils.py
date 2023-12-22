@@ -17,16 +17,16 @@ from LOCOinPython.numerical_model.response_matrix import run_madx
 from LOCOinPython.numerical_model.lattice_correction import LatticeCorrection
 
 
-def apply_kicks(madx, kicks_corrs, reversed=False) -> None:
+def apply_kicks(madx, kicks_corrs, opposite=False) -> None:
     """
     Apply kicks of correctors.
 
     :param madx: Madx instance
     :param kicks_corrs: corr_name-kick_value dict
-    :param reversed: whether to apply kicks with the opposite sign
+    :param opposite: whether to apply kicks with the opposite sign
     :return: None
     """
-    if reversed:
+    if opposite:
         kicks_corrs["kick"]["Values"] *= -1
     for idx, corr in enumerate(kicks_corrs["kick"]["Knobs"]):
         madx.elements[corr].kick += kicks_corrs["kick"]["Values"][idx]
@@ -49,6 +49,8 @@ def get_optics(structure: dict,
     :param kicks_corrs: corr_name-kick_value dict
     :param closing: whether to perform closing
     :param elems_for_closing: dict with elems to use as knobs in closing
+    :param save_etable: whether to save error table in the standard madx format
+    :param file_to_save: a file name to save an error table to
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=False)
@@ -216,6 +218,7 @@ def create_err_table(err_types: List[str], elems_with_errs: List[str], seed: int
     Create a table with errors normally distributed.
 
     :param err_types: error types passed
+    :param elems_with_errs: elems to add errors to
     :param seed: seed
     :return: a table with error types and values introduced to elements
     """
