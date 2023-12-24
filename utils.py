@@ -297,12 +297,12 @@ def match_optics(structure: dict,
     if file_with_kicks:
         madx.input(f"call, file={file_with_kicks};")
 
-    madx.input('match, sequence = ring;')
+    madx.input(f'match, sequence = {structure["sequence_div"]["name"]};')
     for idx in range(len(target_optical_funcs["betx"])):
         bpm = target_optical_funcs["name"][idx]
         goals = [f"{var}={target_optical_funcs[var][idx]}" for var in target_vars]
         goals = ", ".join(goals)
-        madx.input(f"constraint, sequence=ring, range={bpm}, {goals};")
+        madx.input(f"constraint, sequence={structure['sequence_div']['name']}, range={bpm}, {goals};")
 
     for elem, param in elem_and_params_to_match.items():
         madx.input(f"vary, name = {elem}->{param}, step = {param_steps[param]};")
@@ -385,11 +385,11 @@ def correct_orbit(structure: dict,
             elif plane == "y":
                 corr_type = "vkicker"
             for corr in structure["kick_total"][corr_type]:
-                madx.input(f"usekick, status=off, sequence=ring, pattern={corr};")
+                madx.input(f"usekick, status=off, sequence={structure['sequence_div']['name']}, pattern={corr};")
             for corr in corrs_to_use[corr_type]:
-                madx.input(f"usekick, status=on, sequence=ring, pattern={corr};")
+                madx.input(f"usekick, status=on, sequence={structure['sequence_div']['name']}, pattern={corr};")
 
-        madx.input(f"correct, sequence=ring, mode={algorithm}, plane={plane}, ncorr={ncorrs}, orbit=twiss, CLIST = corr.out, MLIST = mon.out, resout=1, error=1e-8;")
+        madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, orbit=twiss, CLIST = corr.out, MLIST = mon.out, resout=1, error=1e-8;")
     except TwissFailed:
         print("Twiss Failed!")
 
