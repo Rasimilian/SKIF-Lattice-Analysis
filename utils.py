@@ -58,7 +58,10 @@ def get_optics(structure: dict,
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=verbose)
-    madx.input("option, echo=false, warn=false, info=false, twiss_print=false;") if verbose else print("Debug off")
+    if not verbose:
+        madx.input("option, echo=false, warn=false, info=false, twiss_print=false;")
+    else:
+        madx.input("debug=true;")
     collect_structure(structure, madx)
     if imperfections_file:
         madx.input(f"readtable, file={imperfections_file}, table=tabl;")
@@ -272,7 +275,10 @@ def match_optics(structure: dict,
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=verbose)
-    madx.input("option, echo=false, warn=false, info=false, twiss_print=false;") if verbose else print("Debug off")
+    if not verbose:
+        madx.input("option, echo=false, warn=false, info=false, twiss_print=false;")
+    else:
+        madx.input("debug=true;")
     collect_structure(structure, madx)
     if imperfections_file:
         madx.input(f"readtable, file={imperfections_file}, table=tabl;")
@@ -315,6 +321,77 @@ def match_optics(structure: dict,
     except TwissFailed:
         print("Twiss Failed!")
         res = None
+
+    madx.quit()
+    del madx
+
+    return res
+
+
+def correct_orbit(structure: dict,
+                  imperfections_file: str = None,
+                  aligns: dict = None,
+                  old_aligns: dict = None,
+                  plane: str = "x",
+                  ncorrs: int = 0,
+                  algorithm: str = "micado",
+                  corrs_to_use: dict = None,
+                  verbose: bool = False) -> dict:
+    """
+    Get optical functions, etc.
+
+    :param structure: obtained from read_structure func
+    :param imperfections_file: file name with imperfections in the madx format
+    :param aligns: imperfections
+    :param old_aligns: preexisted imperfections
+    :param plane: coordinate for orbit correction
+    :param ncorrs: number of correctors to use
+    :param algorithm: method to solve an inverse problem
+    :param corrs_to_use: desired correctors to be used in orbit correction
+    :param verbose: whether to print debugging info to a console
+    :return: dict with optical functions, orbits, etc.
+    """
+    madx = Madx(stdout=verbose)
+    if not verbose:
+        madx.input("option, echo=false, warn=false, info=false, twiss_print=false;")
+    else:
+        madx.input("debug=true;")
+    collect_structure(structure, madx)
+    if imperfections_file:
+        madx.input(f"readtable, file={imperfections_file}, table=tabl;")
+        madx.input("seterr, table=tabl;")
+    else:
+        Imperfections.add_to_model(madx, aligns)
+        Imperfections.add_to_model(madx, old_aligns)
+
+    try:
+        madx.select('FLAG = Twiss', 'class = monitor')
+        madx.twiss(table='twiss', centre=True)
+        madx.input('select, flag = twiss, clear;')
+        res = {"x": madx.table.twiss.selection().x,
+               "y": madx.table.twiss.selection().y,
+               "betx": madx.table.twiss.selection().betx,
+               "bety": madx.table.twiss.selection().bety,
+               "dx": madx.table.twiss.selection().dx,
+               "dy": madx.table.twiss.selection().dy,
+               "s": madx.table.twiss.selection().s,
+               "name": [name.split(":")[0] for name in madx.table.twiss.selection().name]}
+
+        if corrs_to_use:
+            if plane == "x":
+                corr_type = "hkicker"
+            elif plane == "y":
+                corr_type = "vkicker"
+            for corr in structure["kick_total"][corr_type]:
+                madx.input(f"usekick, status=off, sequence=ring, pattern={corr};")
+            for corr in corrs_to_use[corr_type]:
+                madx.input(f"usekick, status=on, sequence=ring, pattern={corr};")
+
+        madx.input(f"correct, sequence=ring, mode={algorithm}, plane={plane}, ncorr={ncorrs}, orbit=twiss, CLIST = corr.out, MLIST = mon.out, resout=1, error=1e-8;")
+    except TwissFailed:
+        print("Twiss Failed!")
+        res = None
+        madx.input(f"correct, sequence=ring, mode={algorithm}, plane={plane}, ncorr={ncorrs}, orbit=twiss, CLIST = corr.out, MLIST = mon.out, resout=1, error=1e-8;")
 
     madx.quit()
     del madx
