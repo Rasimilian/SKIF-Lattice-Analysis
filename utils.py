@@ -41,6 +41,7 @@ def get_optics(structure: dict,
                elems_for_closing: dict = None,
                save_etable: bool = False,
                file_to_save: str = None,
+               file_with_kicks: str = None,
                verbose: bool = False) -> dict:
     """
     Get optical functions, etc.
@@ -54,6 +55,7 @@ def get_optics(structure: dict,
     :param elems_for_closing: dict with elems to use as knobs in closing
     :param save_etable: whether to save error table in the standard madx format
     :param file_to_save: a file name to save an error table to
+    :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
     :param verbose: whether to print debugging info to a console
     :return: dict with optical functions, orbits, etc.
     """
@@ -69,6 +71,9 @@ def get_optics(structure: dict,
     else:
         Imperfections.add_to_model(madx, aligns)
         Imperfections.add_to_model(madx, old_aligns)
+
+    if file_with_kicks:
+        madx.input(f"call, file={file_with_kicks};")
 
     if kicks_corrs:
         for corr_type, corr_list in kicks_corrs.items():
@@ -96,7 +101,7 @@ def get_optics(structure: dict,
                 madx.input('select, flag = twiss, clear;')
                 closed = True
             except TwissFailed:
-                apply_kicks(madx, elems_for_closing, reversed=True)
+                apply_kicks(madx, elems_for_closing, opposite=True)
                 elems_for_closing["k1l"]["Values"] *= -1
                 Imperfections.add_to_model(madx, elems_for_closing)
                 iteration += 1
@@ -259,6 +264,7 @@ def match_optics(structure: dict,
                  target_optical_funcs: dict = None,
                  elem_and_params_to_match: dict = None,
                  param_steps: dict = None,
+                 file_with_kicks: str = None,
                  verbose: bool = False) -> dict:
     """
     Get optical functions, etc.
@@ -271,6 +277,7 @@ def match_optics(structure: dict,
     :param target_optical_funcs: desired target funcs for minimization
     :param elem_and_params_to_match: elements and parameters to vary
     :param param_steps: steps for param variations
+    :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
     :param verbose: whether to print debugging info to a console
     :return: dict with optical functions, orbits, etc.
     """
@@ -286,6 +293,9 @@ def match_optics(structure: dict,
     else:
         Imperfections.add_to_model(madx, aligns)
         Imperfections.add_to_model(madx, old_aligns)
+
+    if file_with_kicks:
+        madx.input(f"call, file={file_with_kicks};")
 
     madx.input('match, sequence = ring;')
     for idx in range(len(target_optical_funcs["betx"])):
@@ -336,7 +346,7 @@ def correct_orbit(structure: dict,
                   ncorrs: int = 0,
                   algorithm: str = "micado",
                   corrs_to_use: dict = None,
-                  verbose: bool = False) -> dict:
+                  verbose: bool = False) -> None:
     """
     Get optical functions, etc.
 
@@ -368,14 +378,6 @@ def correct_orbit(structure: dict,
         madx.select('FLAG = Twiss', 'class = monitor')
         madx.twiss(table='twiss', centre=True)
         madx.input('select, flag = twiss, clear;')
-        res = {"x": madx.table.twiss.selection().x,
-               "y": madx.table.twiss.selection().y,
-               "betx": madx.table.twiss.selection().betx,
-               "bety": madx.table.twiss.selection().bety,
-               "dx": madx.table.twiss.selection().dx,
-               "dy": madx.table.twiss.selection().dy,
-               "s": madx.table.twiss.selection().s,
-               "name": [name.split(":")[0] for name in madx.table.twiss.selection().name]}
 
         if corrs_to_use:
             if plane == "x":
@@ -390,10 +392,6 @@ def correct_orbit(structure: dict,
         madx.input(f"correct, sequence=ring, mode={algorithm}, plane={plane}, ncorr={ncorrs}, orbit=twiss, CLIST = corr.out, MLIST = mon.out, resout=1, error=1e-8;")
     except TwissFailed:
         print("Twiss Failed!")
-        res = None
-        madx.input(f"correct, sequence=ring, mode={algorithm}, plane={plane}, ncorr={ncorrs}, orbit=twiss, CLIST = corr.out, MLIST = mon.out, resout=1, error=1e-8;")
 
     madx.quit()
     del madx
-
-    return res
