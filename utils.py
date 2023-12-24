@@ -33,17 +33,20 @@ def apply_kicks(madx, kicks_corrs, opposite=False) -> None:
 
 
 def get_optics(structure: dict,
+               imperfections_file: str = None,
                aligns: dict = None,
                old_aligns: dict = None,
                kicks_corrs: dict = None,
                closing: bool = False,
                elems_for_closing: dict = None,
                save_etable: bool = False,
-               file_to_save: str = None) -> dict:
+               file_to_save: str = None,
+               verbose: bool = False) -> dict:
     """
     Get optical functions, etc.
 
     :param structure: obtained from read_structure func
+    :param imperfections_file: file name with imperfections in the madx format
     :param aligns: imperfections
     :param old_aligns: preexisted imperfections
     :param kicks_corrs: corr_name-kick_value dict
@@ -51,13 +54,18 @@ def get_optics(structure: dict,
     :param elems_for_closing: dict with elems to use as knobs in closing
     :param save_etable: whether to save error table in the standard madx format
     :param file_to_save: a file name to save an error table to
+    :param verbose: whether to print debugging info to a console
     :return: dict with optical functions, orbits, etc.
     """
-    madx = Madx(stdout=False)
-    madx.input("option, echo=false, warn=false, info=false, twiss_print=false;")
+    madx = Madx(stdout=verbose)
+    madx.input("option, echo=false, warn=false, info=false, twiss_print=false;") if verbose else print("Debug off")
     collect_structure(structure, madx)
-    Imperfections.add_to_model(madx, aligns)
-    Imperfections.add_to_model(madx, old_aligns)
+    if imperfections_file:
+        madx.input(f"readtable, file={imperfections_file}, table=tabl;")
+        madx.input("seterr, table=tabl;")
+    else:
+        Imperfections.add_to_model(madx, aligns)
+        Imperfections.add_to_model(madx, old_aligns)
 
     if kicks_corrs:
         for corr_type, corr_list in kicks_corrs.items():
@@ -267,7 +275,7 @@ def match_optics(structure: dict,
     madx.input("option, echo=false, warn=false, info=false, twiss_print=false;") if verbose else print("Debug off")
     collect_structure(structure, madx)
     if imperfections_file:
-        madx.input("readtable, file=D:/PycharmProjects/SKIF-Lattice-Analysis/imperfections_tables/imperfections_all_aligns.txt, table=tabl;")
+        madx.input(f"readtable, file={imperfections_file}, table=tabl;")
         madx.input("seterr, table=tabl;")
     else:
         Imperfections.add_to_model(madx, aligns)
