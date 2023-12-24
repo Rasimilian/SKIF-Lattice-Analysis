@@ -100,7 +100,10 @@ def get_optics(structure: dict,
                "y": madx.table.twiss.selection().y,
                "betx": madx.table.twiss.selection().betx,
                "bety": madx.table.twiss.selection().bety,
-               "s": madx.table.twiss.selection().s}
+               "dx": madx.table.twiss.selection().dx,
+               "dy": madx.table.twiss.selection().dy,
+               "s": madx.table.twiss.selection().s,
+               "name": [name.split(":")[0] for name in madx.table.twiss.selection().name]}
     except TwissFailed:
         print("Twiss Failed!")
         res = None
@@ -237,5 +240,75 @@ def create_err_table(err_types: List[str], elems_with_errs: List[str], seed: int
     return align_errs
 
 
-def match_optics(madx: Madx, elem_and_params_to_match: dict) -> dict:
-    pass
+def match_optics(structure: dict,
+                 imperfections_file: str = None,
+                 aligns: dict = None,
+                 old_aligns: dict = None,
+                 target_vars: List[str] = None,
+                 target_optical_funcs: dict = None,
+                 elem_and_params_to_match: dict = None,
+                 param_steps: dict = None,
+                 verbose: bool = False) -> dict:
+    """
+    Get optical functions, etc.
+
+    :param structure: obtained from read_structure func
+    :param imperfections_file: file name with imperfections in the madx format
+    :param aligns: imperfections
+    :param old_aligns: preexisted imperfections
+    :param target_vars: variables to be used in minimization
+    :param target_optical_funcs: desired target funcs for minimization
+    :param elem_and_params_to_match: elements and parameters to vary
+    :param param_steps: steps for param variations
+    :param verbose: whether to print debugging info to a console
+    :return: dict with optical functions, orbits, etc.
+    """
+    madx = Madx(stdout=verbose)
+    madx.input("option, echo=false, warn=false, info=false, twiss_print=false;") if verbose else print("Debug off")
+    collect_structure(structure, madx)
+    if imperfections_file:
+        madx.input("readtable, file=D:/PycharmProjects/SKIF-Lattice-Analysis/imperfections_tables/imperfections_all_aligns.txt, table=tabl;")
+        madx.input("seterr, table=tabl;")
+    else:
+        Imperfections.add_to_model(madx, aligns)
+        Imperfections.add_to_model(madx, old_aligns)
+
+    madx.input('match, sequence = ring;')
+    for idx in range(len(target_optical_funcs["betx"])):
+        bpm = target_optical_funcs["name"][idx]
+        goals = [f"{var}={target_optical_funcs[var][idx]}" for var in target_vars]
+        goals = ", ".join(goals)
+        madx.input(f"constraint, sequence=ring, range={bpm}, {goals};")
+
+    for elem, param in elem_and_params_to_match.items():
+        madx.input(f"vary, name = {elem}->{param}, step = {param_steps[param]};")
+
+    madx.input('lmdif, calls=3000, tolerance=1e-16;')
+    madx.input('simplex, calls=1000, tolerance=1e-15;')
+    madx.input('migrad, calls=10000, tolerance=1e-15, strategy=3;')
+    madx.input('jacobian, calls=10000, tolerance=1e-15, repeat=3;')
+    madx.input('endmatch;')
+
+    for elem, param in elem_and_params_to_match.items():
+        madx.input(f'value, {elem}->{param};')
+
+    try:
+        madx.select('FLAG = Twiss', 'class = monitor')
+        madx.twiss(table='twiss', centre=True)
+        madx.input('select, flag = twiss, clear;')
+        res = {"x": madx.table.twiss.selection().x,
+               "y": madx.table.twiss.selection().y,
+               "betx": madx.table.twiss.selection().betx,
+               "bety": madx.table.twiss.selection().bety,
+               "dx": madx.table.twiss.selection().dx,
+               "dy": madx.table.twiss.selection().dy,
+               "s": madx.table.twiss.selection().s,
+               "name": [name.split(":")[0] for name in madx.table.twiss.selection().name]}
+    except TwissFailed:
+        print("Twiss Failed!")
+        res = None
+
+    madx.quit()
+    del madx
+
+    return res
