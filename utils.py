@@ -346,6 +346,8 @@ def correct_orbit(structure: dict,
                   ncorrs: int = 0,
                   algorithm: str = "micado",
                   corrs_to_use: dict = None,
+                  sngval: int = 2,
+                  sngcut: int = 50,
                   verbose: bool = False) -> None:
     """
     Get optical functions, etc.
@@ -358,6 +360,8 @@ def correct_orbit(structure: dict,
     :param ncorrs: number of correctors to use
     :param algorithm: method to solve an inverse problem
     :param corrs_to_use: desired correctors to be used in orbit correction
+    :param sngval: threshold for singular values and redundant correctors
+    :param sngcut: threshold for redundant correctors
     :param verbose: whether to print debugging info to a console
     :return: dict with optical functions, orbits, etc.
     """
@@ -389,7 +393,7 @@ def correct_orbit(structure: dict,
             for corr in corrs_to_use[corr_type]:
                 madx.input(f"usekick, status=on, sequence={structure['sequence_div']['name']}, pattern={corr};")
 
-        madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, orbit=twiss, CLIST = corr.out, MLIST = mon.out, resout=1, error=1e-8;")
+        madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, sngval={sngval}, sngcut={sngcut}, orbit=twiss, CLIST = corr.out, MLIST = mon.out, resout=1, error=1e-8;")
     except TwissFailed:
         print("Twiss Failed!")
 
