@@ -134,6 +134,109 @@ def get_optics(structure: dict,
     return res
 
 
+def get_ptc_optics(structure: dict,
+                   imperfections_file: str = None,
+                   aligns: dict = None,
+                   old_aligns: dict = None,
+                   kicks_corrs: dict = None,
+                   closing: bool = False,
+                   elems_for_closing: dict = None,
+                   save_etable: bool = False,
+                   file_to_save: str = None,
+                   file_with_kicks: str = None,
+                   verbose: bool = False) -> dict:
+    """
+    Get optical functions, etc via the PTC environment.
+
+    :param structure: obtained from read_structure func
+    :param imperfections_file: file name with imperfections in the madx format
+    :param aligns: imperfections
+    :param old_aligns: preexisted imperfections
+    :param kicks_corrs: corr_name-kick_value dict
+    :param closing: whether to perform closing
+    :param elems_for_closing: dict with elems to use as knobs in closing
+    :param save_etable: whether to save error table in the standard madx format
+    :param file_to_save: a file name to save an error table to
+    :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
+    :param verbose: whether to print debugging info to a console
+    :return: dict with optical functions, orbits, etc.
+    """
+    madx = Madx(stdout=verbose)
+    if not verbose:
+        madx.input("option, echo=false, warn=false, info=false, twiss_print=false;")
+    else:
+        madx.input("debug=true;")
+    collect_structure(structure, madx)
+    if imperfections_file:
+        madx.input(f"readtable, file={imperfections_file}, table=tabl;")
+        madx.input("seterr, table=tabl;")
+    else:
+        Imperfections.add_to_model(madx, aligns)
+        Imperfections.add_to_model(madx, old_aligns)
+
+    if file_with_kicks:
+        madx.input(f"call, file={file_with_kicks};")
+
+    if kicks_corrs:
+        for corr_type, corr_list in kicks_corrs.items():
+            for corr, kick_val in corr_list.items():
+                madx.elements[corr].kick += kick_val
+
+    if closing:
+        kick_amplitude = 1e-3  # Adjust me
+        grad_amplitude = 1e-2  # Adjust me
+        verbosing_freq = 100  # Adjust me
+        iteration = 0
+        closed = False
+
+        while not closed:
+            kicks = (np.random.random(len(elems_for_closing["kick"]["Knobs"])) - 0.5) * kick_amplitude
+            elems_for_closing["kick"]["Values"] = kicks
+            k1 = (np.random.random(len(elems_for_closing["k1l"]["Knobs"])) - 0.5) * grad_amplitude
+            elems_for_closing["k1l"]["Values"] = k1
+            try:
+                apply_kicks(madx, elems_for_closing)
+                Imperfections.add_to_model(madx, elems_for_closing)
+
+                madx.select('FLAG = Twiss', 'class = monitor')
+                madx.twiss(table='twiss', centre=True)
+                madx.input('select, flag = twiss, clear;')
+                closed = True
+            except TwissFailed:
+                apply_kicks(madx, elems_for_closing, opposite=True)
+                elems_for_closing["k1l"]["Values"] *= -1
+                Imperfections.add_to_model(madx, elems_for_closing)
+                iteration += 1
+                if iteration % verbosing_freq == 0:
+                    print(iteration)
+
+    try:
+        madx.input("ptc_create_universe; ptc_create_layout, time = True, model = 2, method = 6, nst = 3; ptc_align;")
+        madx.select('FLAG = twiss', 'class = monitor')
+        madx.ptc_twiss(icase=6, closed_orbit=True, center_magnets=True, file="ptc_file", table="twiss")
+        madx.input('select, flag = twiss, clear;')
+        res = {"x": madx.table.twiss.selection().x[::2],
+               "y": madx.table.twiss.selection().y[::2],
+               "betx": madx.table.twiss.selection().betx[::2],
+               "bety": madx.table.twiss.selection().bety[::2],
+               "dx": madx.table.twiss.selection().dx[::2],
+               "dy": madx.table.twiss.selection().dy[::2],
+               "s": madx.table.twiss.selection().s[::2],
+               "name": [name.split(":")[0] for name in madx.table.twiss.selection().name[::2]]}
+    except TwissFailed:
+        print("Twiss Failed!")
+        res = None
+
+    if save_etable:
+        madx.input("select, flag=error, full;")
+        madx.input(f"esave, file = {file_to_save};")
+
+    madx.quit()
+    del madx
+
+    return res
+
+
 def read_tracking_file(file: str, unlost_only: bool) -> Union[pd.DataFrame, List[pd.DataFrame]]:
     """
     Read a tracking file, which is created after the ptc_track command.
