@@ -419,6 +419,13 @@ def match_optics(structure: dict,
     else:
         madx.input("debug=true;")
     collect_structure(structure, madx)
+
+    knobs_for_matching = []
+    for elem, param in elem_and_params_to_match.items():
+        knob = _make_knob_for_matching(madx, elem, param, structure)
+        knobs_for_matching.append((knob, param))
+    madx.input(f"use, sequence={structure['sequence_div']['name']};")
+
     if imperfections_file:
         madx.input(f"readtable, file={imperfections_file}, table=tabl;")
         madx.input("seterr, table=tabl;")
@@ -429,12 +436,6 @@ def match_optics(structure: dict,
     if file_with_kicks:
         madx.input(f"call, file={file_with_kicks};")
 
-    knobs_for_matching = []
-    for elem, param in elem_and_params_to_match.items():
-        knob = _make_knob_for_matching(madx, elem, param, structure)
-        knobs_for_matching.append((knob, param))
-
-    madx.input(f"use, sequence={structure['sequence_div']['name']};")
     madx.input(f'match, sequence = {structure["sequence_div"]["name"]};')
     for idx in range(len(target_optical_funcs["betx"])):
         bpm = target_optical_funcs["name"][idx]
