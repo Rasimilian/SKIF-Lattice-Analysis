@@ -360,6 +360,15 @@ def create_err_table(err_types: List[str], elems_with_errs: List[str], seed: int
 
 
 def _make_knob_for_matching(madx: Madx, elem: str, param: str, structure: dict) -> str:
+    """
+    Make a knob for variation in the MAD-X matching. Knobs for multipoles are created and processed in a special way.
+
+    :param madx: Madx instance
+    :param elem: element name
+    :param param: parameter name in terms of k1, k1s, kick, etc.
+    :param structure: a structure object obtained from the read_structure func
+    :return: string representation of the knob for MAD-X input
+    """
     if structure["elements"][elem]["type"] == "multipole":
         if param == "k1":
             p = elem + "_k1"
