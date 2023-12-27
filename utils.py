@@ -421,8 +421,9 @@ def match_optics(structure: dict,
     knobs_for_matching = []
     for elem, param in elem_and_params_to_match.items():
         knob = _make_knob_for_matching(madx, elem, param, structure)
-        knobs_for_matching.append(knob)
+        knobs_for_matching.append((knob, param))
 
+    madx.input(f"use, sequence={structure['sequence_div']['name']};")
     madx.input(f'match, sequence = {structure["sequence_div"]["name"]};')
     for idx in range(len(target_optical_funcs["betx"])):
         bpm = target_optical_funcs["name"][idx]
@@ -430,7 +431,7 @@ def match_optics(structure: dict,
         goals = ", ".join(goals)
         madx.input(f"constraint, sequence={structure['sequence_div']['name']}, range={bpm}, {goals};")
 
-    for knob in knobs_for_matching:
+    for knob, param in knobs_for_matching:
         madx.input(f"vary, name = {knob}, step = {param_steps[param]};")
 
     madx.input('lmdif, calls=3000, tolerance=1e-16;')
