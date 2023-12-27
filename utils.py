@@ -394,6 +394,7 @@ def match_optics(structure: dict,
                  target_optical_funcs: dict = None,
                  elem_and_params_to_match: dict = None,
                  param_steps: dict = None,
+                 algorithms: Union[str, List[str]] = "lmdif",
                  file_with_kicks: str = None,
                  verbose: bool = False) -> dict:
     """
@@ -407,6 +408,7 @@ def match_optics(structure: dict,
     :param target_optical_funcs: desired target funcs for minimization
     :param elem_and_params_to_match: elements and parameters to vary
     :param param_steps: steps for param variations
+    :param algorithms: algorithms to use during optimization
     :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
     :param verbose: whether to print debugging info to a console
     :return: dict with optical functions, orbits, etc.
@@ -443,10 +445,17 @@ def match_optics(structure: dict,
     for knob, param in knobs_for_matching:
         madx.input(f"vary, name = {knob}, step = {param_steps[param]};")
 
-    madx.input('lmdif, calls=3000, tolerance=1e-16;')
-    madx.input('simplex, calls=1000, tolerance=1e-15;')
-    madx.input('migrad, calls=1000, tolerance=1e-15, strategy=3;')
-    madx.input('jacobian, calls=1000, tolerance=1e-15, repeat=3;')
+    for algorithm in algorithms:
+        if algorithm == "lmdif":
+            madx.input('lmdif, calls=3000, tolerance=1e-16;')
+        elif algorithm == "simplex":
+            madx.input('simplex, calls=1000, tolerance=1e-15;')
+        elif algorithm == "migrad":
+            madx.input('migrad, calls=1000, tolerance=1e-15, strategy=3;')
+        elif algorithm == "jacobian":
+            madx.input('jacobian, calls=1000, tolerance=1e-15, repeat=3;')
+        else:
+            raise ValueError(f"Check the optimization algorithm: {algorithm}")
     madx.input('endmatch;')
 
     for knob in knobs_for_matching:
