@@ -359,6 +359,24 @@ def create_err_table(err_types: List[str], elems_with_errs: List[str], seed: int
     return align_errs
 
 
+def _make_knob_for_matching(madx: Madx, elem: str, param: str, structure: dict) -> str:
+    if structure["elements"][elem]["type"] == "multipole":
+        if param == "k1":
+            p = elem + "_k1"
+            madx.input(f"{p}=0;")
+            madx.input(f"{elem}: multipole,knl:={{0,{p}}};")
+        elif param == "k1s":
+            p = elem + "_k1s"
+            madx.input(f"{p}=0;")
+            madx.input(f"{elem}: multipole,ksl:={{0,{p}}};")
+        else:
+            raise ValueError(f"Check params for variation: {param}")
+    else:
+        p = f"{elem}->{param}"
+
+    return p
+
+
 def match_optics(structure: dict,
                  imperfections_file: str = None,
                  aligns: dict = None,
@@ -400,6 +418,11 @@ def match_optics(structure: dict,
     if file_with_kicks:
         madx.input(f"call, file={file_with_kicks};")
 
+    knobs_for_matching = []
+    for elem, param in elem_and_params_to_match.items():
+        knob = _make_knob_for_matching(madx, elem, param, structure)
+        knobs_for_matching.append(knob)
+
     madx.input(f'match, sequence = {structure["sequence_div"]["name"]};')
     for idx in range(len(target_optical_funcs["betx"])):
         bpm = target_optical_funcs["name"][idx]
@@ -407,17 +430,17 @@ def match_optics(structure: dict,
         goals = ", ".join(goals)
         madx.input(f"constraint, sequence={structure['sequence_div']['name']}, range={bpm}, {goals};")
 
-    for elem, param in elem_and_params_to_match.items():
-        madx.input(f"vary, name = {elem}->{param}, step = {param_steps[param]};")
+    for knob in knobs_for_matching:
+        madx.input(f"vary, name = {knob}, step = {param_steps[param]};")
 
     madx.input('lmdif, calls=3000, tolerance=1e-16;')
     madx.input('simplex, calls=1000, tolerance=1e-15;')
-    madx.input('migrad, calls=10000, tolerance=1e-15, strategy=3;')
-    madx.input('jacobian, calls=10000, tolerance=1e-15, repeat=3;')
+    madx.input('migrad, calls=1000, tolerance=1e-15, strategy=3;')
+    madx.input('jacobian, calls=1000, tolerance=1e-15, repeat=3;')
     madx.input('endmatch;')
 
-    for elem, param in elem_and_params_to_match.items():
-        madx.input(f'value, {elem}->{param};')
+    for knob in knobs_for_matching:
+        madx.input(f'value, {knob};')
 
     try:
         madx.select('FLAG = Twiss', 'class = monitor')
