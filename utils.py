@@ -458,7 +458,7 @@ def match_optics(structure: dict,
             raise ValueError(f"Check the optimization algorithm: {algorithm}")
     madx.input('endmatch;')
 
-    for knob in knobs_for_matching:
+    for knob, param in knobs_for_matching:
         madx.input(f'value, {knob};')
 
     try:
