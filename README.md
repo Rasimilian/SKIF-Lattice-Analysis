@@ -1,2 +1,2 @@
 # SKIF-Lattice-Analysis
-Notebooks for SKIF structure analysis
+Notebooks for SKIF structure analysis.
