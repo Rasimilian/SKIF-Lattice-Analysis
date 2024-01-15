@@ -475,7 +475,7 @@ def match_optics(structure: dict,
                "dx": madx.table.twiss.selection().dx,
                "dy": madx.table.twiss.selection().dy,
                "s": madx.table.twiss.selection().s,
-               "name": [name.split(":")[0] for name in madx.table.twiss.selection().name]
+               "name": [name.split(":")[0] for name in madx.table.twiss.selection().name],
                "qx": madx.table.summ.q1[0],
                "qy": madx.table.summ.q2[0]}
     except TwissFailed:
