@@ -492,7 +492,7 @@ def correct_orbit(structure: dict,
                   imperfections_file: str = None,
                   aligns: dict = None,
                   old_aligns: dict = None,
-                  plane: str = "x",
+                  planes: List[str] = "x",
                   ncorrs: int = 0,
                   algorithm: str = "micado",
                   corrs_to_use: dict = None,
@@ -506,7 +506,7 @@ def correct_orbit(structure: dict,
     :param imperfections_file: file name with imperfections in the madx format
     :param aligns: imperfections
     :param old_aligns: preexisted imperfections
-    :param plane: coordinate for orbit correction
+    :param planes: coordinates for orbit correction
     :param ncorrs: number of correctors to use
     :param algorithm: method to solve an inverse problem
     :param corrs_to_use: desired correctors to be used in orbit correction
@@ -533,17 +533,26 @@ def correct_orbit(structure: dict,
         madx.twiss(table='twiss', centre=True)
         madx.input('select, flag = twiss, clear;')
 
-        if corrs_to_use:
+        if not planes:
+            raise ValueError(f"Empty planes parameter: {planes}")
+        if isinstance(planes, str):
+            planes = [planes]
+
+        for plane in planes:
             if plane == "x":
                 corr_type = "hkicker"
             elif plane == "y":
                 corr_type = "vkicker"
-            for corr in structure["kick_total"][corr_type]:
-                madx.input(f"usekick, status=off, sequence={structure['sequence_div']['name']}, pattern={corr};")
-            for corr in corrs_to_use[corr_type]:
-                madx.input(f"usekick, status=on, sequence={structure['sequence_div']['name']}, pattern={corr};")
+            else:
+                raise ValueError(f"Unknown plane for orbit correction: {plane}")
 
-        madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, sngval={sngval}, sngcut={sngcut}, orbit=twiss, CLIST = corr.out, MLIST = mon.out, resout=1, error=1e-8;")
+            if corrs_to_use:
+                for corr in structure["kick_total"][corr_type]:
+                    madx.input(f"usekick, status=off, sequence={structure['sequence_div']['name']}, pattern={corr};")
+                for corr in corrs_to_use[corr_type]:
+                    madx.input(f"usekick, status=on, sequence={structure['sequence_div']['name']}, pattern={corr};")
+
+            madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, sngval={sngval}, sngcut={sngcut}, orbit=twiss, CLIST = corr_{plane}.out, MLIST = mon_{plane}.out, resout=1, error=1e-8;")
     except TwissFailed:
         print("Twiss Failed!")
 
