@@ -543,7 +543,7 @@ def correct_orbit(structure: dict,
                 for corr in corrs_to_use[corr_type]:
                     madx.input(f"usekick, status=on, sequence={structure['sequence_div']['name']}, pattern={corr};")
 
-            madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, sngval={sngval}, sngcut={sngcut}, orbit=twiss, CLIST = corr_{plane}.out, MLIST = mon_{plane}.out, resout=1, error=1e-8;")
+            madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, sngval={sngval}, sngcut={sngcut}, orbit=twiss, CLIST = corr_{plane}.out, MLIST = mon_{plane}.out, resout=1, error=1e-15;")
     except TwissFailed:
         print("Twiss Failed!")
 
