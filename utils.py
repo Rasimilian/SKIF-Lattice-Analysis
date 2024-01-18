@@ -60,11 +60,8 @@ def get_optics(structure: dict,
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=verbose)
-    if not verbose:
-        madx.input("option, echo=false, warn=false, info=false, twiss_print=false;")
-    else:
-        madx.input("debug=true;")
-    collect_structure(structure, madx)
+    collect_structure(structure, madx, verbose=verbose)
+
     if imperfections_file:
         madx.input(f"readtable, file={imperfections_file}, table=tabl;")
         madx.input("seterr, table=tabl;")
@@ -121,7 +118,11 @@ def get_optics(structure: dict,
                "s": madx.table.twiss.selection().s,
                "name": [name.split(":")[0] for name in madx.table.twiss.selection().name],
                "qx": madx.table.summ.q1[0],
-               "qy": madx.table.summ.q2[0]}
+               "qy": madx.table.summ.q2[0],
+               "betx_all": madx.table.twiss.betx,
+               "bety_all": madx.table.twiss.bety,
+               "s_all": madx.table.twiss.s,
+               "name_all": madx.table.twiss.name}
     except TwissFailed:
         print("Twiss Failed!")
         res = None
@@ -164,11 +165,8 @@ def get_ptc_optics(structure: dict,
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=verbose)
-    if not verbose:
-        madx.input("option, echo=false, warn=false, info=false, twiss_print=false;")
-    else:
-        madx.input("debug=true;")
-    collect_structure(structure, madx)
+    collect_structure(structure, madx, verbose=True)
+
     if imperfections_file:
         madx.input(f"readtable, file={imperfections_file}, table=tabl;")
         madx.input("seterr, table=tabl;")
@@ -416,11 +414,7 @@ def match_optics(structure: dict,
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=verbose)
-    if not verbose:
-        madx.input("option, echo=false, warn=false, info=false, twiss_print=false;")
-    else:
-        madx.input("debug=true;")
-    collect_structure(structure, madx)
+    collect_structure(structure, madx, verbose=verbose)
 
     knobs_for_matching = []
     for elem, param in elem_and_params_to_match.items():
@@ -516,11 +510,8 @@ def correct_orbit(structure: dict,
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=verbose)
-    if not verbose:
-        madx.input("option, echo=false, warn=false, info=false, twiss_print=false;")
-    else:
-        madx.input("debug=true;")
-    collect_structure(structure, madx)
+    collect_structure(structure, madx, verbose=True)
+
     if imperfections_file:
         madx.input(f"readtable, file={imperfections_file}, table=tabl;")
         madx.input("seterr, table=tabl;")
