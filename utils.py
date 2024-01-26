@@ -327,6 +327,20 @@ def plot_optics(data: dict, params_to_show: str, title: str):
         plt.ylabel("Beta function [m]")
         plt.title(title)
         plt.legend()
+    elif params_to_show == "disp":
+        plt.plot(data["s"], data["dx"], label='dx')
+        plt.plot(data["s"], data["dy"], label='dy')
+        plt.xlabel("s [m]")
+        plt.ylabel("Dispersion [m]")
+        plt.title(title)
+        plt.legend()
+    elif params_to_show == "disp_all":
+        plt.plot(data["s_all"], data["dx_all"], label='dx')
+        plt.plot(data["s_all"], data["dy_all"], label='dy')
+        plt.xlabel("s [m]")
+        plt.ylabel("Dispersion [m]")
+        plt.title(title)
+        plt.legend()
 
 
 def plot_dynap(data: dict, dependency_to_show: dict, title: str, plot_name: str):
