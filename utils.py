@@ -125,6 +125,7 @@ def get_optics(structure: dict,
                "qy": madx.table.summ.q2[0],
                "betx_all": madx.table.twiss.betx,
                "bety_all": madx.table.twiss.bety,
+               "dx_all": madx.table.twiss.dx,
                "s_all": madx.table.twiss.s,
                "name_all": madx.table.twiss.name}
     except TwissFailed:
@@ -306,6 +307,7 @@ def plot_optics(data: dict, params_to_show: str, title: str):
     if params_to_show == "beta":
         plt.plot(data["s"], data["betx"], label='betx')
         plt.plot(data["s"], data["bety"], label='bety')
+        plt.plot(data["s"], data["dx"], label='dx')
         plt.xlabel("s [m]")
         plt.ylabel("Beta function [m]")
         plt.title(title)
@@ -320,6 +322,7 @@ def plot_optics(data: dict, params_to_show: str, title: str):
     elif params_to_show == "beta_all":
         plt.plot(data["s_all"], data["betx_all"], label='betx')
         plt.plot(data["s_all"], data["bety_all"], label='bety')
+        plt.plot(data["s_all"], data["dx_all"], label='dx')
         plt.xlabel("s [m]")
         plt.ylabel("Beta function [m]")
         plt.title(title)
