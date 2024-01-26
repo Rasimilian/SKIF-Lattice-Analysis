@@ -33,6 +33,7 @@ def apply_kicks(madx, kicks_corrs, opposite=False) -> None:
 
 
 def get_optics(structure: dict,
+               initial_twiss: dict = None,
                imperfections_file: str = None,
                aligns: dict = None,
                old_aligns: dict = None,
@@ -47,6 +48,7 @@ def get_optics(structure: dict,
     Get optical functions, etc.
 
     :param structure: obtained from read_structure func
+    :param initial_twiss: initial values for optical function for twiss calculation
     :param imperfections_file: file name with imperfections in the madx format
     :param aligns: imperfections
     :param old_aligns: preexisted imperfections
@@ -106,8 +108,10 @@ def get_optics(structure: dict,
                     print(iteration)
 
     try:
+        if initial_twiss is None:
+            initial_twiss = {}
         madx.select('FLAG = Twiss', 'class = monitor')
-        madx.twiss(table='twiss', centre=True)
+        madx.twiss(table='twiss', centre=True, **initial_twiss)
         madx.input('select, flag = twiss, clear;')
         res = {"x": madx.table.twiss.selection().x,
                "y": madx.table.twiss.selection().y,
@@ -313,7 +317,7 @@ def plot_optics(data: dict, params_to_show: str, title: str):
         plt.ylabel("Orbit [m]")
         plt.title(title)
         plt.legend()
-    elif params_to_show == "bet_all":
+    elif params_to_show == "beta_all":
         plt.plot(data["s_all"], data["betx_all"], label='betx')
         plt.plot(data["s_all"], data["bety_all"], label='bety')
         plt.xlabel("s [m]")
