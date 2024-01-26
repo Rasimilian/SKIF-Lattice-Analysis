@@ -313,6 +313,13 @@ def plot_optics(data: dict, params_to_show: str, title: str):
         plt.ylabel("Orbit [m]")
         plt.title(title)
         plt.legend()
+    elif params_to_show == "bet_all":
+        plt.plot(data["s_all"], data["betx_all"], label='betx')
+        plt.plot(data["s_all"], data["bety_all"], label='bety')
+        plt.xlabel("s [m]")
+        plt.ylabel("Beta function [m]")
+        plt.title(title)
+        plt.legend()
 
 
 def plot_dynap(data: dict, dependency_to_show: dict, title: str, plot_name: str):
