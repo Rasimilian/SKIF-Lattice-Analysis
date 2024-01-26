@@ -126,6 +126,7 @@ def get_optics(structure: dict,
                "betx_all": madx.table.twiss.betx,
                "bety_all": madx.table.twiss.bety,
                "dx_all": madx.table.twiss.dx,
+               "dy_all": madx.table.twiss.dy,
                "s_all": madx.table.twiss.s,
                "name_all": madx.table.twiss.name}
     except TwissFailed:
