@@ -77,7 +77,12 @@ def get_optics(structure: dict,
     if kicks_corrs:
         for corr_type, corr_list in kicks_corrs.items():
             for corr, kick_val in corr_list.items():
-                madx.elements[corr].kick += kick_val
+                if "_x" in corr:
+                    madx.elements[corr[:-2]].hkick += kick_val
+                elif "_z" in corr:
+                    madx.elements[corr[:-2]].vkick += kick_val
+                else:
+                    madx.elements[corr].kick += kick_val
 
     if closing:
         kick_amplitude = 1e-3  # Adjust me
