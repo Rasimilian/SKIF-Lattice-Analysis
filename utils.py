@@ -522,9 +522,10 @@ def correct_orbit(structure: dict,
                   ncorrs: int = 0,
                   algorithm: str = "micado",
                   corrs_to_use: dict = None,
+                  target_orbit: str = None,
                   sngval: int = 2,
                   sngcut: int = 50,
-                  verbose: bool = False) -> None:
+                  verbose: bool = False) -> dict:
     """
     Get optical functions, etc.
 
@@ -561,6 +562,12 @@ def correct_orbit(structure: dict,
         if isinstance(planes, str):
             planes = [planes]
 
+        extern = False
+        if target_orbit is not None:
+            madx.input(f'readtable, file="{target_orbit}", table="twiss_bpm";')
+            target_twiss_orbit = 'twiss_bpm'
+            extern = True
+
         for plane in planes:
             if plane == "x":
                 corr_type = "hkicker"
@@ -575,9 +582,36 @@ def correct_orbit(structure: dict,
                 for corr in corrs_to_use[corr_type]:
                     madx.input(f"usekick, status=on, sequence={structure['sequence_div']['name']}, pattern={corr};")
 
-            madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, sngval={sngval}, sngcut={sngcut}, orbit=twiss, CLIST = corr_{plane}.out, MLIST = mon_{plane}.out, resout=1, error=1e-15;")
+            if extern:
+                madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, sngval={sngval}, sngcut={sngcut}, orbit=twiss, extern={extern}, target={target_twiss_orbit}, CLIST = corr_{plane}.out, MLIST = mon_{plane}.out, resout=1, error=1e-15;")
+            else:
+                madx.input(f"correct, sequence={structure['sequence_div']['name']}, mode={algorithm}, plane={plane}, ncorr={ncorrs}, sngval={sngval}, sngcut={sngcut}, orbit=twiss, CLIST = corr_{plane}.out, MLIST = mon_{plane}.out, resout=1, error=1e-15;")
+
+        madx.select('FLAG = Twiss', 'class = monitor')
+        madx.twiss(table='twiss', centre=True)
+        madx.input('select, flag = twiss, clear;')
+        res = {"x": madx.table.twiss.selection().x,
+               "y": madx.table.twiss.selection().y,
+               "betx": madx.table.twiss.selection().betx,
+               "bety": madx.table.twiss.selection().bety,
+               "dx": madx.table.twiss.selection().dx,
+               "dy": madx.table.twiss.selection().dy,
+               "s": madx.table.twiss.selection().s,
+               "name": [name.split(":")[0] for name in madx.table.twiss.selection().name],
+               "qx": madx.table.summ.q1[0],
+               "qy": madx.table.summ.q2[0],
+               "betx_all": madx.table.twiss.betx,
+               "bety_all": madx.table.twiss.bety,
+               "dx_all": madx.table.twiss.dx,
+               "dy_all": madx.table.twiss.dy,
+               "s_all": madx.table.twiss.s,
+               "name_all": madx.table.twiss.name}
+
     except TwissFailed:
         print("Twiss Failed!")
+        res = None
 
     madx.quit()
     del madx
+
+    return res
