@@ -537,6 +537,7 @@ def correct_orbit(structure: dict,
     :param ncorrs: number of correctors to use
     :param algorithm: method to solve an inverse problem
     :param corrs_to_use: desired correctors to be used in orbit correction
+    :param target_orbit: file in TWISS TSV format with target orbit
     :param sngval: threshold for singular values and redundant correctors
     :param sngcut: threshold for redundant correctors
     :param verbose: whether to print debugging info to a console
