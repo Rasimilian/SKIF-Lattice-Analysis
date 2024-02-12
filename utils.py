@@ -139,7 +139,7 @@ def get_optics(structure: dict,
         res = None
 
     if save_etable:
-        madx.input("select, flag=error, full;")
+        madx.input("select, flag=error;")
         madx.input(f"esave, file = {file_to_save};")
 
     madx.quit()
@@ -239,7 +239,7 @@ def get_ptc_optics(structure: dict,
         res = None
 
     if save_etable:
-        madx.input("select, flag=error, full;")
+        madx.input("select, flag=error;")
         madx.input(f"esave, file = {file_to_save};")
 
     madx.quit()
