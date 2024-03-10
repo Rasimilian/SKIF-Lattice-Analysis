@@ -10,11 +10,11 @@ from cpymad.madx import Madx, TwissFailed
 
 sys.path.append("../")
 sys.path.append("../LOCOinPython/")
-from LOCOinPython.file_loader.structure_loader import read_structure, collect_structure
-from LOCOinPython.numerical_model.imperfections import Imperfections
-from LOCOinPython.numerical_model.orbit_correction import OrbitCorrectionSVD
-from LOCOinPython.numerical_model.response_matrix import run_madx
-from LOCOinPython.numerical_model.lattice_correction import LatticeCorrection
+from LOCOinPython.src.file_loader.structure_loader import read_structure, collect_structure
+from LOCOinPython.src.numerical_model.imperfections import Imperfections
+from LOCOinPython.src.numerical_model.orbit_correction import OrbitCorrectionSVD
+from LOCOinPython.src.numerical_model.response_matrix import run_madx
+from LOCOinPython.src.numerical_model.lattice_correction import LatticeCorrection
 
 
 def apply_kicks(madx, kicks_corrs, opposite=False) -> None:
