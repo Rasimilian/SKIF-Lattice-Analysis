@@ -1,5 +1,5 @@
 import sys
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -428,7 +428,9 @@ def match_optics(structure: dict,
                  param_steps: dict = None,
                  algorithms: Union[str, List[str]] = "lmdif",
                  file_with_kicks: str = None,
-                 verbose: bool = False) -> dict:
+                 save_matching: bool = False,
+                 file_to_save: str = None,
+                 verbose: bool = False) -> Tuple[dict, str]:
     """
     Get optical functions, etc.
 
@@ -443,7 +445,11 @@ def match_optics(structure: dict,
     :param algorithms: algorithms to use during optimization
     :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
     :param verbose: whether to print debugging info to a console
-    :return: dict with optical functions, orbits, etc.
+    :param save_matching: whether to the results of matching
+    :param file_to_save: the output file to save the results of matching
+    :return:
+            dict with optical functions, orbits, etc.
+            string representation of element definitions after matching
     """
     madx = Madx(stdout=verbose)
     collect_structure(structure, madx, verbose=verbose)
@@ -508,10 +514,19 @@ def match_optics(structure: dict,
         print("Twiss Failed!")
         res = None
 
+    matching_results = []
+    for elem in elem_and_params_to_match.keys():
+        matching_results.append(str(madx.elements[elem]))
+    matching_results = "\n".join(matching_results)
+
+    if save_matching:
+        with open(file_to_save, 'w') as f:
+            f.write(matching_results)
+
     madx.quit()
     del madx
 
-    return res
+    return res, matching_results
 
 
 def correct_orbit(structure: dict,
