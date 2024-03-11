@@ -66,6 +66,10 @@ def get_optics(structure: dict,
     madx = Madx(stdout=verbose)
     collect_structure(structure, madx, verbose=verbose)
 
+    if file_with_matching_results:
+        madx.input(f"call, file={file_with_matching_results};")
+        madx.input(f"use, sequence={structure['sequence_div']['name']};")
+
     if imperfections_file:
         madx.input(f"readtable, file={imperfections_file}, table=tabl;")
         madx.input("seterr, table=tabl;")
@@ -75,9 +79,6 @@ def get_optics(structure: dict,
 
     if file_with_kicks:
         madx.input(f"call, file={file_with_kicks};")
-
-    if file_with_matching_results:
-        madx.input(f"call, file={file_with_matching_results};")
 
     if kicks_corrs:
         for corr_type, corr_list in kicks_corrs.items():
@@ -461,6 +462,10 @@ def match_optics(structure: dict,
     madx = Madx(stdout=verbose)
     collect_structure(structure, madx, verbose=verbose)
 
+    if file_with_matching_results:
+        madx.input(f"call, file={file_with_matching_results};")
+        madx.input(f"use, sequence={structure['sequence_div']['name']};")
+
     knobs_for_matching = []
     for elem, param in elem_and_params_to_match.items():
         knob = _make_knob_for_matching(madx, elem, param, structure)
@@ -476,9 +481,6 @@ def match_optics(structure: dict,
 
     if file_with_kicks:
         madx.input(f"call, file={file_with_kicks};")
-
-    if file_with_matching_results:
-        madx.input(f"call, file={file_with_matching_results};")
 
     madx.input(f'match, sequence = {structure["sequence_div"]["name"]};')
     for idx in range(len(target_optical_funcs["betx"])):
