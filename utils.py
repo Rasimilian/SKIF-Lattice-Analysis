@@ -4,17 +4,13 @@ from typing import List, Union, Tuple
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
 from tqdm import tqdm
 from cpymad.madx import Madx, TwissFailed
 
 sys.path.append("../")
 sys.path.append("../LOCOinPython/")
-from LOCOinPython.src.file_loader.structure_loader import read_structure, collect_structure
 from LOCOinPython.src.numerical_model.imperfections import Imperfections
-from LOCOinPython.src.numerical_model.orbit_correction import OrbitCorrectionSVD
-from LOCOinPython.src.numerical_model.response_matrix import run_madx
-from LOCOinPython.src.numerical_model.lattice_correction import LatticeCorrection
+from LOCOinPython.src.file_loader.structure_loader import collect_structure
 
 
 def apply_kicks(madx, kicks_corrs, opposite=False) -> None:
