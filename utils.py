@@ -43,6 +43,7 @@ def get_optics(structure: dict,
                save_etable: bool = False,
                file_to_save: str = None,
                file_with_kicks: str = None,
+               file_with_matching_results: str = None,
                verbose: bool = False) -> dict:
     """
     Get optical functions, etc.
@@ -58,6 +59,7 @@ def get_optics(structure: dict,
     :param save_etable: whether to save error table in the standard madx format
     :param file_to_save: a file name to save an error table to
     :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
+    :param file_with_matching_results: a file name with matching results
     :param verbose: whether to print debugging info to a console
     :return: dict with optical functions, orbits, etc.
     """
@@ -73,6 +75,9 @@ def get_optics(structure: dict,
 
     if file_with_kicks:
         madx.input(f"call, file={file_with_kicks};")
+
+    if file_with_matching_results:
+        madx.input(f"call, file={file_with_matching_results};")
 
     if kicks_corrs:
         for corr_type, corr_list in kicks_corrs.items():
@@ -428,6 +433,7 @@ def match_optics(structure: dict,
                  param_steps: dict = None,
                  algorithms: Union[str, List[str]] = "lmdif",
                  file_with_kicks: str = None,
+                 file_with_matching_results: str = None,
                  save_matching: bool = False,
                  file_to_save: str = None,
                  verbose: bool = False) -> Tuple[dict, str]:
@@ -444,6 +450,7 @@ def match_optics(structure: dict,
     :param param_steps: steps for param variations
     :param algorithms: algorithms to use during optimization
     :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
+    :param file_with_matching_results: a file name with matching results
     :param verbose: whether to print debugging info to a console
     :param save_matching: whether to the results of matching
     :param file_to_save: the output file to save the results of matching
@@ -469,6 +476,9 @@ def match_optics(structure: dict,
 
     if file_with_kicks:
         madx.input(f"call, file={file_with_kicks};")
+
+    if file_with_matching_results:
+        madx.input(f"call, file={file_with_matching_results};")
 
     madx.input(f'match, sequence = {structure["sequence_div"]["name"]};')
     for idx in range(len(target_optical_funcs["betx"])):
