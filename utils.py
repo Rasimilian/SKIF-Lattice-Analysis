@@ -349,9 +349,9 @@ def plot_optics(data: dict, params_to_show: str, title: str):
         plt.legend()
 
 
-def plot_dynap(data: dict, dependency_to_show: dict, title: str, plot_name: str):
+def plot_dynap(data: dict, dependency_to_show: dict, title: str, plot_name: str, x_limits: list = None, y_limits: list = None):
     """
-    Plot dynamical aperture.
+    Plot dynamic aperture.
 
     :param data: dict with values for particles and their 6D coordinates
     :param dependency_to_show: what dynap dependency to show
@@ -359,6 +359,10 @@ def plot_dynap(data: dict, dependency_to_show: dict, title: str, plot_name: str)
     :param plot_name: plot name for a dependency
     :return: None
     """
+    if x_limits is None:
+        x_limits = []
+    if y_limits is None:
+        y_limits = []
     x, y = list(dependency_to_show.items())
     x, x_units = x[0], x[1]
     y, y_units = y[0], y[1]
@@ -366,6 +370,8 @@ def plot_dynap(data: dict, dependency_to_show: dict, title: str, plot_name: str)
     plt.xlabel(x + f" [{x_units}]")
     plt.ylabel(y + f" [{y_units}]")
     plt.title(title)
+    plt.xlim(*x_limits)
+    plt.ylim(*y_limits)
     plt.legend()
 
 
