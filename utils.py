@@ -399,6 +399,31 @@ def create_err_table(err_types: List[str], elems_with_errs: List[str], seed: int
     return align_errs
 
 
+def _parse_multipole(definition: str) -> Tuple[str, List[str]]:
+    """
+    Parse multipole definition as defined in MAD-X file.
+    It is needed to create a custom multipole and to vary its fields during matching.
+
+    :param definition: string representation of multipole definition
+    :return:
+            string representation of multipole definition without initial field values
+            list of initial field values in the string format
+    """
+    if "knl" in definition or "ksl" in definition:
+        definition_, values = definition.split("}")[0].split("{")
+        definition_ = definition_.split(",")[0]  # Remove knl= or ksl=
+        values = values.split(",")
+        if len(values) == 1:
+            values += ["0.0"]
+        elif len(values) == 0:
+            values += ["0.0", "0.0"]
+        elif len(values) > 2:
+            raise ValueError(f"Can not work with such multipole definition: too many values or no values passed: {definition}")
+        return definition_, values
+    else:
+        raise ValueError(f"Check multipole definition: {definition}. Desired form: multipole, knl={{...}}")
+
+
 def _make_knob_for_matching(madx: Madx, elem: str, param: str, structure: dict) -> str:
     """
     Make a knob for variation in the MAD-X matching. Knobs for multipoles are created and processed in a special way.
@@ -410,14 +435,15 @@ def _make_knob_for_matching(madx: Madx, elem: str, param: str, structure: dict) 
     :return: string representation of the knob for MAD-X input
     """
     if structure["elements"][elem]["type"] == "multipole":
+        multipole_definition, values = _parse_multipole(str(madx.elements[elem]))
         if param == "k1":
             p = elem + "_k1"
-            madx.input(f"{p}=0;")
-            madx.input(f"{elem}: multipole,knl:={{0,{p}}};")
+            madx.input(f"{p}={values[1]};")
+            madx.input(f"{multipole_definition}, knl={{{values[0]},{p}}};")
         elif param == "k1s":
             p = elem + "_k1s"
-            madx.input(f"{p}=0;")
-            madx.input(f"{elem}: multipole,ksl:={{0,{p}}};")
+            madx.input(f"{p}={values[1]};")
+            madx.input(f"{multipole_definition}, ksl={{{values[0]},{p}}};")
         else:
             raise ValueError(f"Check params for variation: {param}")
     else:
