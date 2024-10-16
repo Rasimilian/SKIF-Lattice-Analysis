@@ -120,6 +120,9 @@ def get_optics(structure: dict,
         madx.select('FLAG = Twiss', 'class = monitor')
         madx.twiss(table='twiss', centre=True, **initial_twiss)
         madx.input('select, flag = twiss, clear;')
+
+        madx.input("emit; ex = beam->ex; ey = beam->ey;")
+
         res = {"x": madx.table.twiss.selection().x,
                "y": madx.table.twiss.selection().y,
                "betx": madx.table.twiss.selection().betx,
@@ -137,7 +140,10 @@ def get_optics(structure: dict,
                "s_all": madx.table.twiss.s,
                "x_all": madx.table.twiss.x,
                "y_all": madx.table.twiss.y,
-               "name_all": madx.table.twiss.name}
+               "name_all": madx.table.twiss.name,
+               "ex": madx.globals["ex"],
+               "ey": madx.globals["ey"]}
+
     except TwissFailed:
         print("Twiss Failed!")
         res = None
@@ -542,6 +548,9 @@ def match_optics(structure: dict,
         madx.select('FLAG = Twiss', 'class = monitor')
         madx.twiss(table='twiss', centre=True)
         madx.input('select, flag = twiss, clear;')
+
+        madx.input("emit; ex = beam->ex; ey = beam->ey;")
+
         res = {"x": madx.table.twiss.selection().x,
                "y": madx.table.twiss.selection().y,
                "betx": madx.table.twiss.selection().betx,
@@ -559,7 +568,10 @@ def match_optics(structure: dict,
                "s_all": madx.table.twiss.s,
                "x_all": madx.table.twiss.x,
                "y_all": madx.table.twiss.y,
-               "name_all": madx.table.twiss.name}
+               "name_all": madx.table.twiss.name,
+               "ex": madx.globals["ex"],
+               "ey": madx.globals["ey"]}
+
     except TwissFailed:
         print("Twiss Failed!")
         res = None
@@ -656,6 +668,9 @@ def correct_orbit(structure: dict,
         madx.select('FLAG = Twiss', 'class = monitor')
         madx.twiss(table='twiss', centre=True)
         madx.input('select, flag = twiss, clear;')
+
+        madx.input("emit; ex = beam->ex; ey = beam->ey;")
+
         res = {"x": madx.table.twiss.selection().x,
                "y": madx.table.twiss.selection().y,
                "betx": madx.table.twiss.selection().betx,
@@ -673,7 +688,9 @@ def correct_orbit(structure: dict,
                "s_all": madx.table.twiss.s,
                "x_all": madx.table.twiss.x,
                "y_all": madx.table.twiss.y,
-               "name_all": madx.table.twiss.name}
+               "name_all": madx.table.twiss.name,
+               "ex": madx.globals["ex"],
+               "ey": madx.globals["ey"]}
 
     except TwissFailed:
         print("Twiss Failed!")
