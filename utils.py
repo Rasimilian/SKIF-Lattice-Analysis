@@ -1,5 +1,5 @@
 import sys
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict
 
 import numpy as np
 import pandas as pd
@@ -135,6 +135,8 @@ def get_optics(structure: dict,
                "dx_all": madx.table.twiss.dx,
                "dy_all": madx.table.twiss.dy,
                "s_all": madx.table.twiss.s,
+               "x_all": madx.table.twiss.x,
+               "y_all": madx.table.twiss.y,
                "name_all": madx.table.twiss.name}
     except TwissFailed:
         print("Twiss Failed!")
@@ -347,6 +349,15 @@ def plot_optics(data: dict, params_to_show: str, title: str):
         plt.ylabel("Dispersion [m]")
         plt.title(title)
         plt.legend()
+    elif params_to_show == "orbit_all":
+        plt.plot(data["s_all"], data["x_all"], label='x')
+        plt.plot(data["s_all"], data["y_all"], label='y')
+        plt.xlabel("s [m]")
+        plt.ylabel("Orbit [m]")
+        plt.title(title)
+        plt.legend()
+    else:
+        raise ValueError(f"Unknown params to show: {params_to_show}")
 
 
 def plot_dynap(data: dict, dependency_to_show: dict, title: str, plot_name: str, x_limits: list = None, y_limits: list = None):
@@ -375,25 +386,26 @@ def plot_dynap(data: dict, dependency_to_show: dict, title: str, plot_name: str,
     plt.legend()
 
 
-def create_err_table(err_types: List[str], elems_with_errs: List[str], seed: int = 42) -> dict:
+def create_err_table(errors_and_sigmas: Union[List[str], Dict[str, float]], elems_with_errs: List[str], seed: int = 42) -> dict:
     """
     Create a table with errors normally distributed.
 
-    :param err_types: error types passed
+    :param errors_and_sigmas: error type and sigma for randomizing
     :param elems_with_errs: elems to add errors to
     :param seed: seed
     :return: a table with error types and values introduced to elements
     """
-    ERR_TYPES = {"dx": 80e-6, "dy": 80e-6, "ds": 80e-6, "dpsi": 200e-6, "dphi": 200e-6, "dtheta": 200e-6}
+    if isinstance(errors_and_sigmas, list):
+        errors_and_sigmas = {err: (80e-6 if err in ["dx", "dy", "ds"] else 200e-6) for err in errors_and_sigmas}
     np.random.seed(seed)
 
     align_errs = {}
 
-    for err in err_types:
+    for err, sigma in errors_and_sigmas.items():
         err_type_to_add = {err: {"Knobs": {}}}
         for elem in elems_with_errs:
             err_type_to_add[err]["Knobs"][elem] = {"Elements": [elem]}
-        err_type_to_add[err]["Values"] = (np.random.normal(scale=ERR_TYPES[err], size=len(elems_with_errs))).tolist()
+        err_type_to_add[err]["Values"] = (np.random.normal(scale=sigma, size=len(elems_with_errs))).tolist()
         align_errs.update(err_type_to_add)
 
     return align_errs
@@ -409,19 +421,9 @@ def _parse_multipole(definition: str) -> Tuple[str, List[str]]:
             string representation of multipole definition without initial field values
             list of initial field values in the string format
     """
-    if "knl" in definition or "ksl" in definition:
-        definition_, values = definition.split("}")[0].split("{")
-        definition_ = definition_.split(",")[0]  # Remove knl= or ksl=
-        values = values.split(",")
-        if len(values) == 1:
-            values += ["0.0"]
-        elif len(values) == 0:
-            values += ["0.0", "0.0"]
-        elif len(values) > 2:
-            raise ValueError(f"Can not work with such multipole definition: too many values or no values passed: {definition}")
-        return definition_, values
-    else:
-        raise ValueError(f"Check multipole definition: {definition}. Desired form: multipole, knl={{...}}")
+    definition_ = definition.split(",")[0]  # Remove knl= or ksl=
+    values = ["0.0", "0.0"]
+    return definition_, values
 
 
 def _make_knob_for_matching(madx: Madx, elem: str, param: str, structure: dict) -> str:
@@ -549,7 +551,15 @@ def match_optics(structure: dict,
                "s": madx.table.twiss.selection().s,
                "name": [name.split(":")[0] for name in madx.table.twiss.selection().name],
                "qx": madx.table.summ.q1[0],
-               "qy": madx.table.summ.q2[0]}
+               "qy": madx.table.summ.q2[0],
+               "betx_all": madx.table.twiss.betx,
+               "bety_all": madx.table.twiss.bety,
+               "dx_all": madx.table.twiss.dx,
+               "dy_all": madx.table.twiss.dy,
+               "s_all": madx.table.twiss.s,
+               "x_all": madx.table.twiss.x,
+               "y_all": madx.table.twiss.y,
+               "name_all": madx.table.twiss.name}
     except TwissFailed:
         print("Twiss Failed!")
         res = None
@@ -661,6 +671,8 @@ def correct_orbit(structure: dict,
                "dx_all": madx.table.twiss.dx,
                "dy_all": madx.table.twiss.dy,
                "s_all": madx.table.twiss.s,
+               "x_all": madx.table.twiss.x,
+               "y_all": madx.table.twiss.y,
                "name_all": madx.table.twiss.name}
 
     except TwissFailed:
