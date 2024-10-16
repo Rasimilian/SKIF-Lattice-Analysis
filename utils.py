@@ -40,7 +40,8 @@ def get_optics(structure: dict,
                file_to_save: str = None,
                file_with_kicks: str = None,
                file_with_matching_results: str = None,
-               verbose: bool = False) -> dict:
+               verbose: bool = False,
+               radiate: bool = False) -> dict:
     """
     Get optical functions, etc.
 
@@ -57,10 +58,11 @@ def get_optics(structure: dict,
     :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
     :param file_with_matching_results: a file name with matching results
     :param verbose: whether to print debugging info to a console
+    :param radiate: whether to turn on radiation
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=verbose)
-    collect_structure(structure, madx, verbose=verbose)
+    collect_structure(structure, madx, verbose=verbose, radiate=radiate)
 
     if file_with_matching_results:
         madx.input(f"call, file={file_with_matching_results};")
@@ -168,7 +170,8 @@ def get_ptc_optics(structure: dict,
                    save_etable: bool = False,
                    file_to_save: str = None,
                    file_with_kicks: str = None,
-                   verbose: bool = False) -> dict:
+                   verbose: bool = False,
+                   radiate: bool = False) -> dict:
     """
     Get optical functions, etc via the PTC environment.
 
@@ -183,10 +186,11 @@ def get_ptc_optics(structure: dict,
     :param file_to_save: a file name to save an error table to
     :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
     :param verbose: whether to print debugging info to a console
+    :param radiate: whether to turn on radiation
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=verbose)
-    collect_structure(structure, madx, verbose=True)
+    collect_structure(structure, madx, verbose=verbose, radiate=radiate)
 
     if imperfections_file:
         madx.input(f"readtable, file={imperfections_file}, table=tabl;")
@@ -473,7 +477,8 @@ def match_optics(structure: dict,
                  file_with_matching_results: str = None,
                  save_matching: bool = False,
                  file_to_save: str = None,
-                 verbose: bool = False) -> Tuple[dict, str]:
+                 verbose: bool = False,
+                 radiate: bool = False) -> Tuple[dict, str]:
     """
     Get optical functions, etc.
 
@@ -491,12 +496,13 @@ def match_optics(structure: dict,
     :param verbose: whether to print debugging info to a console
     :param save_matching: whether to the results of matching
     :param file_to_save: the output file to save the results of matching
+    :param radiate: whether to turn on radiation
     :return:
             dict with optical functions, orbits, etc.
             string representation of element definitions after matching
     """
     madx = Madx(stdout=verbose)
-    collect_structure(structure, madx, verbose=verbose)
+    collect_structure(structure, madx, verbose=verbose, radiate=radiate)
 
     if file_with_matching_results:
         madx.input(f"call, file={file_with_matching_results};")
@@ -602,7 +608,8 @@ def correct_orbit(structure: dict,
                   target_orbit: str = None,
                   sngval: int = 2,
                   sngcut: int = 50,
-                  verbose: bool = False) -> dict:
+                  verbose: bool = False,
+                  radiate: bool = False) -> dict:
     """
     Get optical functions, etc.
 
@@ -618,10 +625,11 @@ def correct_orbit(structure: dict,
     :param sngval: threshold for singular values and redundant correctors
     :param sngcut: threshold for redundant correctors
     :param verbose: whether to print debugging info to a console
+    :param radiate: whether to turn on radiation
     :return: dict with optical functions, orbits, etc.
     """
     madx = Madx(stdout=verbose)
-    collect_structure(structure, madx, verbose=True)
+    collect_structure(structure, madx, verbose=verbose, radiate=radiate)
 
     if imperfections_file:
         madx.input(f"readtable, file={imperfections_file}, table=tabl;")
