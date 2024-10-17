@@ -413,7 +413,15 @@ def create_err_table(errors_and_sigmas: Union[List[str], Dict[str, float]], elem
     :return: a table with error types and values introduced to elements
     """
     if isinstance(errors_and_sigmas, list):
-        errors_and_sigmas = {err: (80e-6 if err in ["dx", "dy", "ds"] else 200e-6) for err in errors_and_sigmas}
+        tmp = {}
+        for err in errors_and_sigmas:
+            if err in ["dx", "dy", "ds"]:
+                tmp[err] = 80e-6
+            elif err in ["dphi", "dpsi", "dtheta"]:
+                tmp[err] = 200e-6
+            else:
+                raise ValueError(f"Unknown error type: {err}")
+        errors_and_sigmas = tmp
     np.random.seed(seed)
 
     align_errs = {}
@@ -438,9 +446,12 @@ def _parse_multipole(definition: str) -> Tuple[str, List[str]]:
             string representation of multipole definition without initial field values
             list of initial field values in the string format
     """
-    definition_ = definition.split(",")[0]  # Remove knl= or ksl=
+    if "knl" in definition or "ksl" in definition:
+        definition = definition.split(",")[0]  # Remove knl= or ksl=
+    else:
+        definition = definition.split(";")[0]
     values = ["0.0", "0.0"]
-    return definition_, values
+    return definition, values
 
 
 def _make_knob_for_matching(madx: Madx, elem: str, param: str, structure: dict) -> str:
@@ -458,11 +469,11 @@ def _make_knob_for_matching(madx: Madx, elem: str, param: str, structure: dict) 
         if param == "k1":
             p = elem + "_k1"
             madx.input(f"{p}={values[1]};")
-            madx.input(f"{multipole_definition}, knl={{{values[0]},{p}}};")
+            madx.input(f"{multipole_definition}, knl:={{{values[0]},{p}}};")
         elif param == "k1s":
             p = elem + "_k1s"
             madx.input(f"{p}={values[1]};")
-            madx.input(f"{multipole_definition}, ksl={{{values[0]},{p}}};")
+            madx.input(f"{multipole_definition}, ksl:={{{values[0]},{p}}};")
         else:
             raise ValueError(f"Check params for variation: {param}")
     else:
