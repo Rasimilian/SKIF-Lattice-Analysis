@@ -40,6 +40,8 @@ def get_optics(structure: dict,
                file_to_save: str = None,
                file_with_kicks: str = None,
                file_with_matching_results: str = None,
+               saveseq: bool = False,
+               seq_file: str = None,
                verbose: bool = False,
                radiate: bool = False) -> dict:
     """
@@ -57,6 +59,8 @@ def get_optics(structure: dict,
     :param file_to_save: a file name to save an error table to
     :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
     :param file_with_matching_results: a file name with matching results
+    :param saveseq: whether to save a sequence to a file
+    :param seq_file: a file name with to save a sequence
     :param verbose: whether to print debugging info to a console
     :param radiate: whether to turn on radiation
     :return: dict with optical functions, orbits, etc.
@@ -153,6 +157,9 @@ def get_optics(structure: dict,
     if save_etable:
         madx.input("select, flag=error;")
         madx.input(f"esave, file = {file_to_save};")
+
+    if saveseq:
+        madx.input(f"save, sequence={structure['sequence_div']['name']}, file={seq_file}, noexpr=true, csave=true;")
 
     madx.quit()
     del madx
