@@ -1,14 +1,14 @@
-call, file="D:\PycharmProjects\SKIF-Lattice-Analysis\structures\Ring_DD_one_period.seq";
+call, file="D:\PycharmProjects\SKIF-Lattice-Analysis\structures\Ring_DD.seq";
 beam, sequence=ring, particle=electron, energy=3, radiate=False;
 use, sequence=ring;
 
-!call,file="D:\PycharmProjects\SKIF-Lattice-Analysis\match_res1.txt";
-!use, sequence=ring;
+call,file="D:\PycharmProjects\SKIF-Lattice-Analysis\match_res1.txt";
+use, sequence=ring;
 
-READTABLE, file="D:\PycharmProjects\SKIF-Lattice-Analysis\imperfections_tables\imperfections_one_period.txt", table=errtab;
+READTABLE, file="D:\PycharmProjects\SKIF-Lattice-Analysis\imperfections_tables\imperfections_all_aligns.txt", table=errtab;
 SETERR, TABLE=errtab;
 
-!call,file="D:\PycharmProjects\SKIF-Lattice-Analysis\stren1.out";
+call,file="D:\PycharmProjects\SKIF-Lattice-Analysis\stren1.out";
 
 ptc_create_universe;
 ptc_create_layout, time=True, model=2,method=6,nst=3;
@@ -30,7 +30,7 @@ value, y;
 x=x+step;
 value, x;};
 
-ptc_track, icase=6, turns=1000, closed_orbit = False, radiation=False, maxaper={1,1,1,1,1,1}, element_by_element = False, onetable=True, file="D:\PycharmProjects\SKIF-Lattice-Analysis\tracking_data\trackingXY_oneperiod_norad_allaligns_1000",EXTENSION=".txt";
+ptc_track, icase=6, turns=1000, closed_orbit = False, radiation=False, maxaper={1,1,1,1,1,1}, element_by_element = False, onetable=True, file="D:\PycharmProjects\SKIF-Lattice-Analysis\tracking_data\trackingXY_norad_allAligns_kicksOn_matchedOnCheck_1000",EXTENSION=".txt";
 ptc_track_end;
 ptc_end;
 
