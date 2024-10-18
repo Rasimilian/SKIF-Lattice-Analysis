@@ -299,6 +299,9 @@ def read_tracking_file(file: str, unlost_only: bool) -> Union[pd.DataFrame, List
             list_df_per_turn.append([float(k.replace(",", ".")) for k in i_])
             # df=pd.concat([df,pd.DataFrame(np.array([[float(k) for k in i.split()]]))],ignore_index=True)
 
+    if not len(list_df):
+        raise ValueError("All particles are lost! Tracking data is empty")
+
     if n == len(table) - 1:
         df = df.rename(columns={0: "number", 1: "turn", 2: "x", 3: "px", 4: "y", 5: "py", 6: "t", 7: "pt", 8: "s", 9: "E"})
         list_df.append(df)
