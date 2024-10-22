@@ -148,7 +148,8 @@ def get_optics(structure: dict,
                "y_all": madx.table.twiss.y,
                "name_all": madx.table.twiss.name,
                "ex": madx.globals["ex"],
-               "ey": madx.globals["ey"]}
+               "ey": madx.globals["ey"],
+               "coupling": 0 if madx.globals["ey"] == 1 and madx.globals["ex"] == 1 else madx.globals["ey"] / madx.globals["ex"]}
 
     except TwissFailed:
         print("Twiss Failed!")
@@ -489,7 +490,7 @@ def match_optics(structure: dict,
                  imperfections_file: str = None,
                  aligns: dict = None,
                  old_aligns: dict = None,
-                 target_vars: List[str] = None,
+                 target_vars_and_weights: Dict[str, float] = None,
                  target_optical_funcs: dict = None,
                  elem_and_params_to_match: dict = None,
                  param_steps: dict = None,
@@ -507,7 +508,7 @@ def match_optics(structure: dict,
     :param imperfections_file: file name with imperfections in the madx format
     :param aligns: imperfections
     :param old_aligns: preexisted imperfections
-    :param target_vars: variables to be used in minimization
+    :param target_vars_and_weights: variables and weights to use in minimization
     :param target_optical_funcs: desired target funcs for minimization
     :param elem_and_params_to_match: elements and parameters to vary
     :param param_steps: steps for param variations
@@ -545,12 +546,42 @@ def match_optics(structure: dict,
     if file_with_kicks:
         madx.input(f"call, file={file_with_kicks};")
 
-    madx.input(f'match, sequence = {structure["sequence_div"]["name"]};')
-    for idx in range(len(target_optical_funcs["betx"])):
-        bpm = target_optical_funcs["name"][idx]
-        goals = [f"{var}={target_optical_funcs[var][idx]}" for var in target_vars]
-        goals = ", ".join(goals)
-        madx.input(f"constraint, sequence={structure['sequence_div']['name']}, range={bpm}, {goals};")
+    if "coupling" in target_vars_and_weights or "ex" in target_vars_and_weights or "ey" in target_vars_and_weights:
+        madx.input(f'match, use_macro, sequence = {structure["sequence_div"]["name"]};')
+        macro = "mac: macro={twiss, centre=True;"
+        constraint = ""
+        if "coupling" in target_vars_and_weights:
+            macro += "emit; MVAR1:=beam->ey/beam->ex;"
+            constraint += f"constraint, weight={target_vars_and_weights['coupling']}, expr=MVAR1={target_optical_funcs['coupling']};"
+        if "ex" in target_vars_and_weights:
+            macro += "MVAR2:=beam->ex;"
+            constraint += f"constraint, weight={target_vars_and_weights['ex']}, expr=MVAR2={target_optical_funcs['ex']};"
+        if "ey" in target_vars_and_weights:
+            macro += "MVAR3:=beam->ey;"
+            constraint += f"constraint, weight={target_vars_and_weights['ey']}, expr=MVAR3={target_optical_funcs['ey']};"
+        madx.input(macro + "};" + constraint)
+
+        for idx in range(len(target_optical_funcs["betx"])):
+            bpm = target_optical_funcs["name"][idx]
+            for var, weight in target_vars_and_weights:
+                madx.input(f"constraint, weight={target_vars_and_weights[var]} expr=table(twiss,{bpm},{var})={target_optical_funcs[var][idx]};")
+        if "qx" in target_vars_and_weights:
+            madx.input(f"constraint, weight={target_vars_and_weights['qx']}, expr=table(summ,q1)={target_optical_funcs['qx']};")
+        if "qy" in target_vars_and_weights:
+            madx.input(f"constraint, weight={target_vars_and_weights['qy']}, expr=table(summ,q2)={target_optical_funcs['qy']};")
+    else:
+        madx.input(f'match, sequence = {structure["sequence_div"]["name"]};')
+        for idx in range(len(target_optical_funcs["betx"])):
+            bpm = target_optical_funcs["name"][idx]
+            goals = [f"{var}={target_optical_funcs[var][idx]}" for var in target_vars_and_weights.values()]
+            goals = ", ".join(goals)
+            madx.input(f"constraint, sequence={structure['sequence_div']['name']}, range={bpm}, {goals};")
+        weights = ""
+        if "qx" in target_vars_and_weights or "qy" in target_vars_and_weights:
+            weights += f"gweight, q1={target_vars_and_weights['qx']}, q2={target_vars_and_weights['qy']};"
+        else:
+            weights += "weight," + ",".join([f"{var}={weight}" for var, weight in target_vars_and_weights.items() if var not in ["qx", "qy"]]) + ";"
+        madx.input(weights)
 
     for knob, param in knobs_for_matching:
         madx.input(f"vary, name = {knob}, step = {param_steps[param]};")
@@ -597,7 +628,8 @@ def match_optics(structure: dict,
                "y_all": madx.table.twiss.y,
                "name_all": madx.table.twiss.name,
                "ex": madx.globals["ex"],
-               "ey": madx.globals["ey"]}
+               "ey": madx.globals["ey"],
+               "coupling": 0 if madx.globals["ey"] == 1 and madx.globals["ex"] == 1 else madx.globals["ey"] / madx.globals["ex"]}
 
     except TwissFailed:
         print("Twiss Failed!")
@@ -622,6 +654,7 @@ def correct_orbit(structure: dict,
                   imperfections_file: str = None,
                   aligns: dict = None,
                   old_aligns: dict = None,
+                  file_with_kicks: str = None,
                   planes: List[str] = "x",
                   ncorrs: int = 0,
                   algorithm: str = "micado",
@@ -637,7 +670,8 @@ def correct_orbit(structure: dict,
     :param structure: obtained from read_structure func
     :param imperfections_file: file name with imperfections in the madx format
     :param aligns: imperfections
-    :param old_aligns: preexisted imperfections
+    :param old_aligns: preexisted imperfections file_with_kicks
+    :param file_with_kicks: a file name with corrector kicks obtained from the madx orbit correction command
     :param planes: coordinates for orbit correction
     :param ncorrs: number of correctors to use
     :param algorithm: method to solve an inverse problem
@@ -658,6 +692,9 @@ def correct_orbit(structure: dict,
     else:
         Imperfections.add_to_model(madx, aligns)
         Imperfections.add_to_model(madx, old_aligns)
+
+    if file_with_kicks:
+        madx.input(f"call, file={file_with_kicks};")
 
     try:
         madx.select('FLAG = Twiss', 'class = monitor')
@@ -719,7 +756,8 @@ def correct_orbit(structure: dict,
                "y_all": madx.table.twiss.y,
                "name_all": madx.table.twiss.name,
                "ex": madx.globals["ex"],
-               "ey": madx.globals["ey"]}
+               "ey": madx.globals["ey"],
+               "coupling": 0 if madx.globals["ey"] == 1 and madx.globals["ex"] == 1 else madx.globals["ey"] / madx.globals["ex"]}
 
     except TwissFailed:
         print("Twiss Failed!")
