@@ -547,6 +547,7 @@ def match_optics(structure: dict,
         madx.input(f"call, file={file_with_kicks};")
 
     if "coupling" in target_vars_and_weights or "ex" in target_vars_and_weights or "ey" in target_vars_and_weights:
+        # Use macro to optimize emittances and coupling
         madx.input(f'match, use_macro, sequence = {structure["sequence_div"]["name"]};')
         macro = "mac: macro={twiss, centre=True;"
         constraint = ""
@@ -563,8 +564,9 @@ def match_optics(structure: dict,
 
         for idx in range(len(target_optical_funcs["betx"])):
             bpm = target_optical_funcs["name"][idx]
-            for var, weight in target_vars_and_weights:
-                madx.input(f"constraint, weight={target_vars_and_weights[var]} expr=table(twiss,{bpm},{var})={target_optical_funcs[var][idx]};")
+            for var, weight in target_vars_and_weights.items():
+                if var not in ["qx", "qy", "coupling", "ex", "ey"]:
+                    madx.input(f"constraint, weight={weight}, expr=table(twiss,{bpm},{var})={target_optical_funcs[var][idx]};")
         if "qx" in target_vars_and_weights:
             madx.input(f"constraint, weight={target_vars_and_weights['qx']}, expr=table(summ,q1)={target_optical_funcs['qx']};")
         if "qy" in target_vars_and_weights:
@@ -573,7 +575,7 @@ def match_optics(structure: dict,
         madx.input(f'match, sequence = {structure["sequence_div"]["name"]};')
         for idx in range(len(target_optical_funcs["betx"])):
             bpm = target_optical_funcs["name"][idx]
-            goals = [f"{var}={target_optical_funcs[var][idx]}" for var in target_vars_and_weights.values()]
+            goals = [f"{var}={target_optical_funcs[var][idx]}" for var in target_vars_and_weights.values() if var not in ["qx", "qy"]]
             goals = ", ".join(goals)
             madx.input(f"constraint, sequence={structure['sequence_div']['name']}, range={bpm}, {goals};")
         weights = ""
